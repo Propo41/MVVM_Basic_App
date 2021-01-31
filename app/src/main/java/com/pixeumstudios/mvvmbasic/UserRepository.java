@@ -1,11 +1,15 @@
 package com.pixeumstudios.mvvmbasic;
 
 import android.os.CountDownTimer;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -18,9 +22,9 @@ import java.util.logging.Handler;
  * your application would almost certainly start to struggle.
  */
 public class UserRepository {
+    private static final String TAG = "UserRepository";
     private static UserRepository instance;
-    private static final DatabaseReference DB_REF =
-            FirebaseDatabase.getInstance().getReference().child("users");
+    private static final FirebaseDatabase database = FirebaseDatabase.getInstance();
     private FirebaseQueryLiveData liveData;
 
     public static UserRepository getInstance(){
@@ -47,10 +51,28 @@ public class UserRepository {
 
     }
 
+    /**
+     *
+     * @param url the dir at which we have to find the data
+     * @return a dataSnaphsot at that particular position as LiveData
+     */
     @NonNull
-    public LiveData<DataSnapshot> listeningAtDatabase(String uid) {
-        liveData = new FirebaseQueryLiveData(DB_REF.child(uid));
+    public LiveData<DataSnapshot> listeningAtDatabase(String url) {
+        liveData = new FirebaseQueryLiveData(database.getReference(url));
         return liveData;
     }
 
+    public void updateUserFromDb(String dir, User user) {
+        database.getReference(dir).setValue(user).addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                Log.i(TAG, "value updated successfully");
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
 }

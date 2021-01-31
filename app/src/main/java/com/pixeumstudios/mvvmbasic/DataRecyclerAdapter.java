@@ -14,40 +14,57 @@ import java.util.ArrayList;
 
 public class DataRecyclerAdapter extends RecyclerView.Adapter<DataRecyclerAdapter.DataRecyclerAdapterViewHolder> {
 
-    private ArrayList<User> mExampleItems;
+    private ArrayList<User> mUserList;
+    private OnItemClickListener mListener;
 
-    public DataRecyclerAdapter(ArrayList<User> exampleItems){
-        mExampleItems = exampleItems;
+    public DataRecyclerAdapter(ArrayList<User> userList){
+        mUserList = userList;
+    }
+
+    public interface OnItemClickListener{
+        void onItemClick(int position);
     }
 
     public static class DataRecyclerAdapterViewHolder extends RecyclerView.ViewHolder{
         private ItemDataBinding mBinding;
+        private OnItemClickListener mListener;
 
-        public DataRecyclerAdapterViewHolder(ItemDataBinding binding){
+        public DataRecyclerAdapterViewHolder(ItemDataBinding binding, final OnItemClickListener customListener){
             super(binding.getRoot());
             mBinding = binding;
+            mListener = customListener;
 
         }
     }
 
+    public void setOnItemClickListener(OnItemClickListener listener){
+        mListener = listener;
+    }
 
 
     @NonNull
     @Override
     public DataRecyclerAdapter.DataRecyclerAdapterViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ItemDataBinding binding = ItemDataBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
-        return new DataRecyclerAdapterViewHolder(binding);
+        return new DataRecyclerAdapterViewHolder(binding, mListener);
 
     }
 
     @Override
     public void onBindViewHolder(@NonNull DataRecyclerAdapter.DataRecyclerAdapterViewHolder holder, int position) {
-        User currentItem = mExampleItems.get(position);
+        User currentItem = mUserList.get(position);
         holder.mBinding.textView3.setText(currentItem.getName());
+        holder.mBinding.textView3.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                holder.mListener.onItemClick(position);
+                return true;
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-        return mExampleItems.size();
+        return mUserList.size();
     }
 }

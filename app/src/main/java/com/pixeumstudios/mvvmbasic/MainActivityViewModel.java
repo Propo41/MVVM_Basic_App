@@ -21,20 +21,19 @@ public class MainActivityViewModel extends ViewModel {
     }
 
     /**
-     * Called from the Activity to get data
+     * Called from the Activity to initialize the repository
      */
-    public void queryRepo(String userId) {
+    public void initializeRepo() {
         userRepo = UserRepository.getInstance();
-        user = (MutableLiveData<User>) userRepo.getUser(userId);
     }
 
-    public void updateUser(User updatedUser) {
-        user.postValue(updatedUser);
+    public void updateUser(String dir, User user) {
+        userRepo.updateUserFromDb(dir, user);
     }
 
     @NonNull
-    public LiveData<DataSnapshot> getDataSnapshotLiveData(String uid) {
-        return userRepo.listeningAtDatabase(uid);
+    public LiveData<DataSnapshot> getDataSnapshotLiveData(String url) {
+        return userRepo.listeningAtDatabase(url);
     }
 }
 

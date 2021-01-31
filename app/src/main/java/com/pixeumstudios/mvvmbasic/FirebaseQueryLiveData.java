@@ -17,8 +17,12 @@ import com.google.firebase.database.ValueEventListener;
  * With FirebaseQueryLiveData, whenever the data from the Query given in the constructor changes,
  * MyValueEventListener triggers with a new DataSnapshot, and it notifies any observers
  * of that using the setValue() method on LiveData
- * https://firebase.googleblog.com/2017/12/using-android-architecture-components.html
- * https://medium.com/globallogic-latinoamerica-mobile/viewmodel-firebase-database-3cc708044b5d
+ *
+ * LiveData considers an observer to be in an active state if its lifecycle is in the STARTED or
+ * RESUMED state. The observer transitions to an inactive state if its lifecycle is in the DESTROYED state.
+ *
+ * REF: https://firebase.googleblog.com/2017/12/using-android-architecture-components.html
+ *      https://medium.com/globallogic-latinoamerica-mobile/viewmodel-firebase-database-3cc708044b5d
  */
 
 public class FirebaseQueryLiveData extends LiveData<DataSnapshot> {
@@ -35,15 +39,18 @@ public class FirebaseQueryLiveData extends LiveData<DataSnapshot> {
         this.query = ref;
     }
 
+    /**
+     * NOTE:
+     */
     @Override
     protected void onActive() {
-        Log.d(LOG_TAG, "onActive");
+        Log.d(LOG_TAG, "onActive: " + query.getRef().toString());
         query.addValueEventListener(listener);
     }
 
     @Override
     protected void onInactive() {
-        Log.d(LOG_TAG, "onInactive");
+        Log.d(LOG_TAG, "onInactive: " + query.getRef().toString());
         query.removeEventListener(listener);
     }
 

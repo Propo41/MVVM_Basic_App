@@ -1,6 +1,5 @@
 package com.pixeumstudios.mvvmbasic;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LiveData;
@@ -13,30 +12,24 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.pixeumstudios.mvvmbasic.databinding.ActivityMainBinding;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private ActivityMainBinding mBinding;
-    private MainActivityViewModel viewModel;
+    private MainActivityViewModel mViewModel;
     private DataRecyclerAdapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
-    private static final DatabaseReference DB_REF =
-            FirebaseDatabase.getInstance().getReference();
+    private ArrayList<User> mUsersList;
+    private ArrayList<String> mUidList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,33 +37,21 @@ public class MainActivity extends AppCompatActivity {
         mBinding = ActivityMainBinding.inflate(getLayoutInflater());
         View view = mBinding.getRoot();
         setContentView(view);
-        mBinding.recyclerView.setHasFixedSize(true); // this will lock the scrolling. We cant scroll
-        mLayoutManager = new LinearLayoutManager(this);
-        // mAdapter = new DataRecyclerAdapter(exampleItemsList);
-
-        mBinding.recyclerView.setLayoutManager(mLayoutManager);
-        mBinding.recyclerView.setAdapter(mAdapter);
+        setupRecyclerView();
 
        // FirebaseDatabase.getInstance().getReference().child("users/user1").setValue(new User("Arnob", "AUST", 1234));
 
-        viewModel = ViewModelProviders.of(this)
+        mViewModel = ViewModelProviders.of(this)
                 .get(MainActivityViewModel.class);
-        viewModel.queryRepo("someUserId");
-        viewModel.getUser().observe(this, new Observer<User>() {
-            @Override
-            public void onChanged(User user) {
-                if (user != null) {
-                    mBinding.textView.setText(user.getName());
-                    mBinding.textView2.setText(user.getUniversity());
-                    //mBinding.imageView.setImageResource(user.getImgRes());
-                }
-            }
-        });
 
+        mViewModel.initializeRepo();
         mBinding.button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                LiveData<DataSnapshot> liveData = viewModel.getDataSnapshotLiveData("user1");
+                mBinding.button.setEnabled(false);
+
+                // observing a single user
+                LiveData<DataSnapshot> liveData = mViewModel.getDataSnapshotLiveData("users/user1");
                 liveData.observe(MainActivity.this, new Observer<DataSnapshot>() {
                     @Override
                     public void onChanged(@Nullable DataSnapshot dataSnapshot) {
@@ -83,6 +64,42 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
+
+                // observing user list
+                LiveData<DataSnapshot> liveDataList = mViewModel.getDataSnapshotLiveData("/users/");
+                liveDataList.observe(MainActivity.this, new Observer<DataSnapshot>() {
+                    @Override
+                    public void onChanged(@Nullable DataSnapshot dataSnapshot) {
+                        if (dataSnapshot != null) {
+                            for(DataSnapshot snapshot: dataSnapshot.getChildren()){
+                                User user = snapshot.getValue(User.class);
+                                mUsersList.add(user);
+                                mUidList.add(snapshot.getKey());
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    private void setupRecyclerView() {
+        mUidList = new ArrayList<>();
+        mUsersList = new ArrayList<>();
+        mBinding.recyclerView.setHasFixedSize(true); // this will lock the scrolling. We cant scroll
+        mLayoutManager = new LinearLayoutManager(this);
+        mAdapter = new DataRecyclerAdapter(mUsersList);
+        mBinding.recyclerView.setLayoutManager(mLayoutManager);
+        mBinding.recyclerView.setAdapter(mAdapter);
+
+        mAdapter.setOnItemClickListener(new DataRecyclerAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int position) {
+                User user = new User("Sucker", "Sucker", 696969);
+                String userUidClicked = mUidList.get(position);
+                mUsersList.set(position, user);
+                mViewModel.updateUser("/users/" + userUidClicked, user);
+                mAdapter.notifyItemChanged(position);
             }
         });
     }
